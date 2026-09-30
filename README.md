@@ -40,19 +40,24 @@ Then open <http://localhost:3000>.
 
 ### One-shot setup script
 
-`setup.sh` is self-contained. It writes every project file, runs `npm ci`,
-installs the systemd units and checks that the socket answers. You can copy
-this one file to a machine and run it without cloning the repo:
+`setup.sh` does the whole install in one go: it finds the repo, runs
+`npm ci`, installs the systemd units and checks that the socket answers.
+
+- If you run it from inside a steamos-config checkout (or run the copy inside
+  one), it uses that checkout.
+- Otherwise it clones the repo to `~/git/steamos-config`. If that clone
+  already exists, it updates it with `git pull --ff-only` and uses it.
 
 ```sh
-./setup.sh                 # installs to ~/webterm and enables the socket
-./setup.sh --dir ~/apps/webterm --tmux
-./setup.sh --no-service    # files + npm install only
+./setup.sh                 # install deps and enable the socket
+./setup.sh --tmux          # same, but the shell runs inside tmux
+./setup.sh --no-service    # npm install only; don't touch systemd
 ```
 
-It checks for Node, npm and the build tools before it changes anything.
-`setup.sh` is generated, so don't edit it by hand. After you change a source
-file, run `bash scripts/gen-setup.sh` to rebuild it.
+`WEBTERM_CLONE_DIR` and `WEBTERM_REPO_URL` override the clone location and
+URL. If the repo is private, cloning needs your GitHub credentials (for
+example an SSH URL in `WEBTERM_REPO_URL`). The script checks for git, Node,
+npm and the build tools before it changes anything.
 
 ## Run on demand (systemd)
 
