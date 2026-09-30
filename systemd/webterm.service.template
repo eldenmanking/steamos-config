@@ -1,0 +1,10 @@
+[Unit]
+Description=Web terminal (xterm.js + node-pty)
+Requires=webterm.socket
+After=webterm.socket
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO_DIR__
+ExecStart=__NODE__ server.js
+Restart=on-failure
