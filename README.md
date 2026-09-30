@@ -1,0 +1,2 @@
+# steamos-config
+SteamOS configuration
