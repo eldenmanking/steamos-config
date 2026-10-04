@@ -60,6 +60,11 @@ Windows 11 needs some registry tinkering during setup to skip the TPM and
 Secure Boot requirements. The video [Installing Windows 11 via Gnome
 Boxes][boxes-video] walks through the whole process.
 
+See also the GNOME Boxes [issue #236][boxes-issue].
+
+If you use the Flatpak version of GNOME Boxes, USB devices must be attached to
+the VM manually.
+
 ### Bypassing the TPM and Secure Boot checks
 
 > These are the commonly documented steps for the Windows 11 installer. I
@@ -102,9 +107,11 @@ preinstalled apps and trim telemetry and other defaults.
 - [Enabling home directory encryption (dirlock)][dirlock]
 - [Installing Windows 11 via Gnome Boxes (video)][boxes-video]
 - [Win11Debloat][win11debloat]
+- [GNOME Boxes issue #236][boxes-issue]
 
 [steamos-install]: https://help.steampowered.com/en/faqs/view/65B4-2AA3-5F37-4227
 [dirlock]: https://gitlab.steamos.cloud/holo/dirlock/-/wikis/Enabling-disk-encryption-on-the-Steam-Deck
 [boxes-video]: https://www.youtube.com/watch?v=7yFaVNE-0SY
 [gnome-boxes]: https://wiki.gnome.org/Apps/Boxes
 [win11debloat]: https://github.com/raphire/win11debloat
+[boxes-issue]: https://gitlab.gnome.org/GNOME/gnome-boxes/-/work_items/236
