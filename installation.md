@@ -77,13 +77,34 @@ If the installer stops with "This PC can't run Windows 11":
 5. Close regedit and the command prompt, go back one step in the installer,
    and continue.
 
+### Creating a local account
+
+To skip the Microsoft account requirement, open a command prompt on the
+sign-in screen with `Shift+F10` and run:
+
+```
+start ms-cxh:localonly
+```
+
+This opens a local account creation dialog.
+
+> As with the regedit steps above, this is the commonly documented method and
+> hasn't been checked against the video.
+
+### Debloating Windows
+
+After Windows is installed, run [Win11Debloat][win11debloat] to remove
+preinstalled apps and trim telemetry and other defaults.
+
 ## Resources
 
 - [Installing SteamOS][steamos-install]
 - [Enabling home directory encryption (dirlock)][dirlock]
 - [Installing Windows 11 via Gnome Boxes (video)][boxes-video]
+- [Win11Debloat][win11debloat]
 
 [steamos-install]: https://help.steampowered.com/en/faqs/view/65B4-2AA3-5F37-4227
 [dirlock]: https://gitlab.steamos.cloud/holo/dirlock/-/wikis/Enabling-disk-encryption-on-the-Steam-Deck
 [boxes-video]: https://www.youtube.com/watch?v=7yFaVNE-0SY
 [gnome-boxes]: https://wiki.gnome.org/Apps/Boxes
+[win11debloat]: https://github.com/raphire/win11debloat
