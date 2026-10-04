@@ -47,7 +47,7 @@ All of these come with a stock SteamOS or Arch install:
 - Linux with systemd (including `/usr/lib/systemd/systemd-socket-proxyd`)
 - `git`, `curl`, `sha256sum`, `tar`, `xz`
 - x86_64 or aarch64 (the CPU types ttyd publishes static builds for)
-- Optional: `tmux` for [tmux mode](#tmux-mode)
+- Optional: `tmux`, to [keep work running](#keeping-work-with-tmux)
 
 ## Quick start
 
@@ -129,7 +129,8 @@ too.
 
 Open tabs show "Reconnecting..." and come back by themselves with the new
 settings (font, title and so on), without a page reload. Each tab gets a
-**fresh shell**, so anything running in the old one ends.
+**fresh shell**, so anything running in a bare shell ends. tmux sessions
+survive; see [Keeping work with tmux](#keeping-work-with-tmux).
 
 The exception is the token. After changing it, open the new URL; tabs still
 on the old one can't reconnect.
@@ -179,12 +180,29 @@ can do anything you can.
 - Don't expose it beyond localhost (port forwarding, reverse proxy,
   `0.0.0.0`) without real authentication and TLS.
 
-## Tmux mode
+## Keeping work with tmux
 
-In tmux mode, each connection runs `tmux new-session -A -s web` instead of a
-bare shell. Closing the tab only detaches, and the next visit reattaches to
-the same session. The tmux server outlives webterm's idle exit, so running
-programs keep going.
+Bare shells are disposable. A bare shell ends when you close its tab, when
+webterm stops on idle, and when you run `scripts/restart.sh`.
+
+To keep something running, start `tmux` in the terminal. The tmux server
+survives all three, and you reattach with `tmux attach` on your next visit.
+
+Why the tmux server survives: everything started from webterm, including a
+tmux server, belongs to `webterm-ttyd.service`. By default systemd kills all
+of a service's processes when it stops. The unit sets `KillMode=process`, so
+on stop systemd signals only ttyd. ttyd then hangs up its shells, which ends
+them. tmux detaches and keeps running.
+
+When the service next starts, systemd logs a "left-over process" notice about
+the tmux server. That's expected.
+
+### Tmux mode
+
+Tmux mode does the `tmux` step for you. Each tab runs
+`tmux new-session -A -s web`, which attaches to the session named "web" or
+creates it. So every tab shows the same session, and closing a tab only
+detaches.
 
 `./setup.sh --tmux` sets this up for you. To do it by hand, run
 `systemctl --user edit webterm-ttyd.service` and add:

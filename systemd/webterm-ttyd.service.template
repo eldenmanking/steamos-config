@@ -13,3 +13,6 @@ ExecStartPre=rm -f %t/webterm.sock
 ExecStart=__REPO_DIR__/bin/ttyd -i %t/webterm.sock -b /${WEBTERM_TOKEN} -W -O -P 10 -t "titleFixed=Web Terminal" -t "fontFamily=${WEBTERM_FONT}" __REPO_DIR__/bin/webterm-shell
 # Don't let the proxy connect before ttyd is listening
 ExecStartPost=sh -c 'for i in $$(seq 50); do [ -S %t/webterm.sock ] && exit 0; sleep 0.1; done; exit 1'
+# On stop, signal only ttyd: it hangs up its shells itself, while a tmux server
+# started from one of them keeps running and can be reattached later.
+KillMode=process
