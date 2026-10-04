@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# webterm setup: finds (or clones) the steamos-config repo, installs its npm
-# dependencies and enables the systemd user socket for http://localhost:3000.
+# webterm setup: finds (or clones) the steamos-config repo, downloads the
+# static ttyd binary and enables the systemd user socket on localhost:3000.
 #
 # If the current directory (or this script's directory) is inside the repo,
 # that checkout is used. Otherwise the repo is cloned to ~/git/steamos-config.
 #
 # Usage: ./setup.sh [--tmux] [--no-service]
 #   --tmux         run the shell inside tmux (sessions survive tab closes)
-#   --no-service   only install npm dependencies; don't touch systemd
+#   --no-service   only download ttyd; don't touch systemd
 #
 # Env: WEBTERM_REPO_URL  clone URL (default: the GitHub repo over https)
 #      WEBTERM_CLONE_DIR clone location (default: ~/git/steamos-config)
@@ -28,32 +28,26 @@ done
 
 die() { echo "error: $*" >&2; exit 1; }
 
-# --- prerequisites -----------------------------------------------------------
+# --- prerequisites (all part of a stock SteamOS / Arch install) --------------
 missing=()
-command -v git >/dev/null || missing+=(git)
-command -v node >/dev/null || missing+=(nodejs)
-command -v npm >/dev/null || missing+=(npm)
-command -v make >/dev/null || missing+=(make)
-command -v g++ >/dev/null || command -v c++ >/dev/null || missing+=(g++)
-command -v python3 >/dev/null || missing+=(python)
-if [ "$TMUX_MODE" = 1 ]; then command -v tmux >/dev/null || missing+=(tmux); fi
-if [ ${#missing[@]} -gt 0 ]; then
-  echo "Missing: ${missing[*]}" >&2
-  echo "node-pty compiles a native module, so build tools are required." >&2
-  echo "  Arch:    sudo pacman -S --needed git base-devel python nodejs npm tmux" >&2
-  echo "  SteamOS: see 'SteamOS notes' in the README (rootfs is read-only)." >&2
-  exit 1
+for cmd in git curl sha256sum; do
+  command -v "$cmd" >/dev/null || missing+=("$cmd")
+done
+if [ "$SERVICE" = 1 ]; then
+  command -v systemctl >/dev/null || missing+=(systemctl)
+  [ -x /usr/lib/systemd/systemd-socket-proxyd ] || [ -x /lib/systemd/systemd-socket-proxyd ] \
+    || missing+=(systemd-socket-proxyd)
 fi
-node_major="$(node -p 'process.versions.node.split(".")[0]')"
-[ "$node_major" -ge 18 ] || die "Node >= 18 required (found $(node -v))"
+if [ "$TMUX_MODE" = 1 ]; then command -v tmux >/dev/null || missing+=(tmux); fi
+[ ${#missing[@]} -eq 0 ] || die "missing: ${missing[*]}"
 
 # --- locate or clone the repo ------------------------------------------------
 # Prints the checkout's top-level dir if $1 is inside the steamos-config repo.
 repo_root() {
   local top
   top="$(git -C "$1" rev-parse --show-toplevel 2>/dev/null)" || return 1
-  [ -f "$top/server.js" ] && grep -q '"name": "steamos-config"' "$top/package.json" 2>/dev/null \
-    && echo "$top"
+  # files present in every version of the repo, so old clones get updated too
+  [ -f "$top/setup.sh" ] && [ -f "$top/systemd/webterm.socket" ] && echo "$top"
 }
 
 SCRIPT_DIR=""
@@ -75,37 +69,39 @@ else
 fi
 cd "$REPO_DIR"
 
-# --- install dependencies ----------------------------------------------------
-echo "Installing npm dependencies (builds node-pty)..."
-npm ci --no-audit --no-fund
-
 if [ "$SERVICE" = 0 ]; then
-  echo "Done. Start it manually with: cd '$REPO_DIR' && npm start"
+  bash scripts/fetch-ttyd.sh
+  echo "Done. Run it manually with:"
+  echo "  '$REPO_DIR/bin/ttyd' -i 127.0.0.1 -p 3000 -W -O '$REPO_DIR/bin/webterm-shell'"
   exit 0
 fi
 
 # --- systemd user socket -----------------------------------------------------
-command -v systemctl >/dev/null || die "systemctl not found; rerun with --no-service"
 systemctl --user show-environment >/dev/null 2>&1 \
   || die "no systemd user session (log in graphically or via ssh, not su/sudo)"
 
-bash scripts/install-systemd.sh
-
-DROPIN="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/webterm.service.d"
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+DROPIN="$UNIT_DIR/webterm-ttyd.service.d"
+# tmux setting from the Node.js version lived on webterm.service (now the proxy)
+if [ -f "$UNIT_DIR/webterm.service.d/tmux.conf" ]; then
+  rm -f "$UNIT_DIR/webterm.service.d/tmux.conf"
+  TMUX_MODE=1
+fi
 if [ "$TMUX_MODE" = 1 ]; then
   mkdir -p "$DROPIN"
   printf '[Service]\nEnvironment=WEBTERM_TMUX=1\n' > "$DROPIN/tmux.conf"
 else
   rm -f "$DROPIN/tmux.conf"
 fi
-systemctl --user daemon-reload
 
-# Poke the socket once to prove activation works (server exits again when idle)
-if command -v curl >/dev/null; then
-  if curl -fsS --noproxy '*' -o /dev/null --max-time 10 http://127.0.0.1:3000/; then
-    echo "Check: http://localhost:3000 answered, socket activation works."
-  else
-    echo "warning: http://localhost:3000 did not answer; see: journalctl --user -u webterm.service" >&2
-  fi
+bash scripts/install-systemd.sh
+
+# Poke the socket once to prove activation works (it exits again when idle)
+# shellcheck disable=SC1091
+. "${XDG_CONFIG_HOME:-$HOME/.config}/webterm/env"
+URL="http://127.0.0.1:3000/${WEBTERM_TOKEN:+$WEBTERM_TOKEN/}"
+if curl -fsS --noproxy '*' -o /dev/null --max-time 10 "$URL"; then
+  echo "Check: $URL answered, socket activation works."
+else
+  echo "warning: $URL did not answer; see: journalctl --user -u webterm.service -u webterm-ttyd.service" >&2
 fi
-systemctl --user --no-pager status webterm.socket | head -n 3 || true

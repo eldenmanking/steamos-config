@@ -1,10 +1,8 @@
 [Unit]
-Description=Web terminal (xterm.js + node-pty)
-Requires=webterm.socket
-After=webterm.socket
+Description=Web terminal proxy (starts ttyd on demand, exits when idle)
+Requires=webterm.socket webterm-ttyd.service
+After=webterm.socket webterm-ttyd.service
 
 [Service]
-Type=simple
-WorkingDirectory=__REPO_DIR__
-ExecStart=__NODE__ server.js
-Restart=on-failure
+Environment=WEBTERM_IDLE=30s
+ExecStart=__PROXYD__ --exit-idle-time=${WEBTERM_IDLE} %t/webterm.sock
