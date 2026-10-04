@@ -87,7 +87,7 @@ What gets installed:
 To install or remove just the units:
 
 ```sh
-bash scripts/install-systemd.sh
+bash scripts/install-systemd.sh     # also restarts it if running
 bash scripts/uninstall-systemd.sh
 ```
 
@@ -107,10 +107,32 @@ Change the environment settings with a drop-in, for example:
 systemctl --user edit webterm.service       # [Service] Environment=WEBTERM_IDLE=5min
 ```
 
-To change the port, edit `systemd/webterm.socket` and re-run
-`scripts/install-systemd.sh`. After editing the token, stop the service
-(`systemctl --user stop webterm.service`). The next visit then uses the new
-token.
+To change the port, edit `systemd/webterm.socket`. After any change, apply it
+as described in [Applying changes](#applying-changes).
+
+## Applying changes
+
+```sh
+bash scripts/restart.sh
+```
+
+You don't need to close the browser. The script:
+
+1. re-renders the units from the repo (so edited templates and a `git pull`
+   take effect),
+2. reloads systemd, and
+3. restarts the proxy and ttyd, but only if they're running. If they aren't,
+   the next visit starts them with the new settings anyway.
+
+`~/.config/webterm/env` is read again on every start, so changes there apply
+too.
+
+Open tabs show "Reconnecting..." and come back by themselves with the new
+settings (font, title and so on), without a page reload. Each tab gets a
+**fresh shell**, so anything running in the old one ends.
+
+The exception is the token. After changing it, open the new URL; tabs still
+on the old one can't reconnect.
 
 ## Font
 
@@ -128,12 +150,12 @@ How it works:
 - If the browser was already open when the font was installed, restart it.
   Until then it uses the next font in the list.
 
-To use a different font, add it to `~/.config/webterm/env` and stop the
-service so the next visit picks it up:
+To use a different font, add it to `~/.config/webterm/env` and restart.
+Open tabs switch fonts when they reconnect:
 
 ```sh
 echo 'WEBTERM_FONT=JetBrainsMonoNL Nerd Font Mono, monospace' >> ~/.config/webterm/env
-systemctl --user stop webterm.service
+bash scripts/restart.sh
 ```
 
 The value can be any CSS font list without an `=`. Run

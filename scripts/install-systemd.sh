@@ -28,9 +28,10 @@ sed -e "s|__REPO_DIR__|$REPO_DIR|g" "$REPO_DIR/systemd/webterm-ttyd.service.temp
 cp "$REPO_DIR/systemd/webterm.socket" "$UNIT_DIR/webterm.socket"
 
 systemctl --user daemon-reload
-# Pick up changed units on re-install
-systemctl --user stop webterm.service webterm-ttyd.service 2>/dev/null || true
 systemctl --user enable --now webterm.socket
+# If it's running, restart it so the new units and settings apply right away.
+# Open tabs reconnect on their own (their shells are restarted).
+systemctl --user try-restart webterm.service webterm-ttyd.service
 
 echo "Installed. Open http://localhost:3000/${WEBTERM_TOKEN:+$WEBTERM_TOKEN/}"
 echo "(server starts on first visit, exits when idle)"
