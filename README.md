@@ -53,7 +53,6 @@ All of these come with a stock SteamOS or Arch install:
 
 ```sh
 ./setup.sh                 # font + ttyd, install the units, enable the socket
-./setup.sh --tmux          # same, but the shell runs inside tmux
 ./setup.sh --no-font       # skip installing JetBrainsMono Nerd Font
 ./setup.sh --no-service    # just download ttyd (and the font)
 ```
@@ -96,7 +95,6 @@ bash scripts/uninstall-systemd.sh
 | Setting      | Where                                                     | Default            |
 | ------------ | --------------------------------------------------------- | ------------------ |
 | Idle timeout | `WEBTERM_IDLE` in `webterm.service`                       | `30s`              |
-| Tmux mode    | `WEBTERM_TMUX=1` in `webterm-ttyd.service`                | off                |
 | Font         | `WEBTERM_FONT` in `webterm-ttyd.service` or the env file  | JetBrainsMono Nerd Font Mono |
 | URL token    | `WEBTERM_TOKEN` in `~/.config/webterm/env`                | random, 32 hex     |
 | Port         | `ListenStream` in `systemd/webterm.socket`                | `127.0.0.1:3000`   |
@@ -196,21 +194,6 @@ them. tmux detaches and keeps running.
 
 When the service next starts, systemd logs a "left-over process" notice about
 the tmux server. That's expected.
-
-### Tmux mode
-
-Tmux mode does the `tmux` step for you. Each tab runs
-`tmux new-session -A -s web`, which attaches to the session named "web" or
-creates it. So every tab shows the same session, and closing a tab only
-detaches.
-
-`./setup.sh --tmux` sets this up for you. To do it by hand, run
-`systemctl --user edit webterm-ttyd.service` and add:
-
-```ini
-[Service]
-Environment=WEBTERM_TMUX=1
-```
 
 ## Upgrading from the Node.js version
 

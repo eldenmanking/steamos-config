@@ -116,7 +116,7 @@ def main():
 
     rundir = tempfile.mkdtemp()
     sock = os.path.join(rundir, "webterm.sock")
-    env = {**os.environ, "SHELL": "/bin/bash", "WEBTERM_TMUX": "0"}
+    env = {**os.environ, "SHELL": "/bin/bash"}
     procs.append(subprocess.Popen(
         [ttyd, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
          "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}",

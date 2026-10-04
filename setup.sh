@@ -5,8 +5,7 @@
 # If the current directory (or this script's directory) is inside the repo,
 # that checkout is used. Otherwise the repo is cloned to ~/git/steamos-config.
 #
-# Usage: ./setup.sh [--tmux] [--no-font] [--no-service]
-#   --tmux         run the shell inside tmux (sessions survive tab closes)
+# Usage: ./setup.sh [--no-font] [--no-service]
 #   --no-font      don't install JetBrainsMono Nerd Font
 #   --no-service   only download ttyd (and the font); don't touch systemd
 #
@@ -16,15 +15,13 @@ set -euo pipefail
 
 REPO_URL="${WEBTERM_REPO_URL:-https://github.com/eldenmanking/steamos-config.git}"
 CLONE_DIR="${WEBTERM_CLONE_DIR:-$HOME/git/steamos-config}"
-TMUX_MODE=0
 FONT=1
 SERVICE=1
 while [ $# -gt 0 ]; do
   case "$1" in
-    --tmux) TMUX_MODE=1; shift ;;
     --no-font) FONT=0; shift ;;
     --no-service) SERVICE=0; shift ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -41,7 +38,6 @@ if [ "$SERVICE" = 1 ]; then
   [ -x /usr/lib/systemd/systemd-socket-proxyd ] || [ -x /lib/systemd/systemd-socket-proxyd ] \
     || missing+=(systemd-socket-proxyd)
 fi
-if [ "$TMUX_MODE" = 1 ]; then command -v tmux >/dev/null || missing+=(tmux); fi
 [ ${#missing[@]} -eq 0 ] || die "missing: ${missing[*]}"
 
 # --- locate or clone the repo ------------------------------------------------
@@ -84,20 +80,6 @@ fi
 # --- systemd user socket -----------------------------------------------------
 systemctl --user show-environment >/dev/null 2>&1 \
   || die "no systemd user session (log in graphically or via ssh, not su/sudo)"
-
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-DROPIN="$UNIT_DIR/webterm-ttyd.service.d"
-# tmux setting from the Node.js version lived on webterm.service (now the proxy)
-if [ -f "$UNIT_DIR/webterm.service.d/tmux.conf" ]; then
-  rm -f "$UNIT_DIR/webterm.service.d/tmux.conf"
-  TMUX_MODE=1
-fi
-if [ "$TMUX_MODE" = 1 ]; then
-  mkdir -p "$DROPIN"
-  printf '[Service]\nEnvironment=WEBTERM_TMUX=1\n' > "$DROPIN/tmux.conf"
-else
-  rm -f "$DROPIN/tmux.conf"
-fi
 
 bash scripts/install-systemd.sh
 

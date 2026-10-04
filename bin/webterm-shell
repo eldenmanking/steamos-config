@@ -1,7 +1,4 @@
 #!/bin/sh
 # Command ttyd runs for each browser connection.
 cd "$HOME" || exit 1
-if [ "${WEBTERM_TMUX:-0}" = 1 ]; then
-  exec tmux new-session -A -s web
-fi
 exec "${SHELL:-/bin/bash}" -l
