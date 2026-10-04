@@ -6,6 +6,7 @@ starts systemd-socket-proxyd on the first connection, exactly like the unit.
 Checks: secret path, origin check, shell round-trip, and idle exit.
 """
 import base64
+import json
 import os
 import shutil
 import socket
@@ -18,6 +19,7 @@ import time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 3999
 TOKEN = "smoketoken"
+FONT = "JetBrainsMono Nerd Font Mono, JetBrainsMono Nerd Font, monospace"
 IDLE = "4s"
 
 
@@ -117,6 +119,7 @@ def main():
     env = {**os.environ, "SHELL": "/bin/bash", "WEBTERM_TMUX": "0"}
     procs.append(subprocess.Popen(
         [ttyd, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
+         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}",
          os.path.join(REPO, "bin", "webterm-shell")],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     for _ in range(50):
@@ -153,6 +156,7 @@ def main():
     # arithmetic so the typed echo differs from the command's real output
     ws.send("0echo web$((40+2))term; exit\n")
     out = b""
+    prefs = None
     deadline = time.time() + 5
     while b"web42term" not in out and time.time() < deadline:
         try:
@@ -161,10 +165,15 @@ def main():
             break
         if op == 0x2 and data[:1] == b"0":
             out += data[1:]
+        elif op == 0x2 and data[:1] == b"2":
+            prefs = json.loads(data[1:])
     ws.close()
     if b"web42term" not in out:
         fail("no shell output")
     print("ok: shell round-trip")
+    if not prefs or prefs.get("fontFamily") != FONT or prefs.get("titleFixed") != "Web Terminal":
+        fail(f"client options not delivered: {prefs}")
+    print("ok: page told to use", FONT.split(",")[0])
 
     try:
         code = activator.wait(timeout=10)

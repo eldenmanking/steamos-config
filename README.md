@@ -45,16 +45,17 @@ program can start a shell and attach it to a terminal.
 All of these come with a stock SteamOS or Arch install:
 
 - Linux with systemd (including `/usr/lib/systemd/systemd-socket-proxyd`)
-- `git`, `curl`, `sha256sum`
+- `git`, `curl`, `sha256sum`, `tar`, `xz`
 - x86_64 or aarch64 (the CPU types ttyd publishes static builds for)
 - Optional: `tmux` for [tmux mode](#tmux-mode)
 
 ## Quick start
 
 ```sh
-./setup.sh                 # download ttyd, install the units, enable the socket
+./setup.sh                 # font + ttyd, install the units, enable the socket
 ./setup.sh --tmux          # same, but the shell runs inside tmux
-./setup.sh --no-service    # just download ttyd
+./setup.sh --no-font       # skip installing JetBrainsMono Nerd Font
+./setup.sh --no-service    # just download ttyd (and the font)
 ```
 
 When it finishes, it prints your URL, which looks like
@@ -74,6 +75,10 @@ example an SSH URL in `WEBTERM_REPO_URL`).
 
 What gets installed:
 
+- **Font:** `scripts/fetch-font.sh` installs JetBrainsMono Nerd Font
+  (Nerd Fonts v3.4.0, the same release your dotfiles use) into
+  `~/.local/share/fonts/JetBrainsMonoNerdFont/`, after checking its SHA-256.
+  It does nothing if `fc-list` already lists the font.
 - **ttyd:** `scripts/fetch-ttyd.sh` downloads ttyd 1.7.7 to `bin/ttyd`
   (git ignores it) and checks it against a pinned SHA-256.
 - **Units:** they go into `~/.config/systemd/user/`. Everything stays in
@@ -92,6 +97,7 @@ bash scripts/uninstall-systemd.sh
 | ------------ | --------------------------------------------------------- | ------------------ |
 | Idle timeout | `WEBTERM_IDLE` in `webterm.service`                       | `30s`              |
 | Tmux mode    | `WEBTERM_TMUX=1` in `webterm-ttyd.service`                | off                |
+| Font         | `WEBTERM_FONT` in `webterm-ttyd.service` or the env file  | JetBrainsMono Nerd Font Mono |
 | URL token    | `WEBTERM_TOKEN` in `~/.config/webterm/env`                | random, 32 hex     |
 | Port         | `ListenStream` in `systemd/webterm.socket`                | `127.0.0.1:3000`   |
 
@@ -105,6 +111,33 @@ To change the port, edit `systemd/webterm.socket` and re-run
 `scripts/install-systemd.sh`. After editing the token, stop the service
 (`systemctl --user stop webterm.service`). The next visit then uses the new
 token.
+
+## Font
+
+The terminal uses **JetBrainsMono Nerd Font Mono** by default. The Mono
+variant draws Nerd Font icons one cell wide, so prompts line up in the grid.
+
+How it works:
+
+- ttyd's `-t key=value` passes any option straight to xterm.js, so the unit
+  runs `-t "fontFamily=${WEBTERM_FONT}"`. No custom build is needed.
+- The page only names the font. The browser draws it from fonts installed
+  on the machine it runs on, which is the Deck here. That's why `setup.sh`
+  installs the font. Flatpak browsers (the default on SteamOS) should also
+  see `~/.local/share/fonts`.
+- If the browser was already open when the font was installed, restart it.
+  Until then it uses the next font in the list.
+
+To use a different font, add it to `~/.config/webterm/env` and stop the
+service so the next visit picks it up:
+
+```sh
+echo 'WEBTERM_FONT=JetBrainsMonoNL Nerd Font Mono, monospace' >> ~/.config/webterm/env
+systemctl --user stop webterm.service
+```
+
+The value can be any CSS font list without an `=`. Run
+`fc-list : family | grep -i nerd` to see the exact names that are installed.
 
 ## Security
 

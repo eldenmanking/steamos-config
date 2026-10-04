@@ -4,9 +4,12 @@ Description=Web terminal (ttyd)
 StopWhenUnneeded=yes
 
 [Service]
+# The browser must have this font installed (see scripts/fetch-font.sh);
+# otherwise it falls back to the next family in the list.
+Environment="WEBTERM_FONT=JetBrainsMono Nerd Font Mono, JetBrainsMono Nerd Font, monospace"
 EnvironmentFile=-%h/.config/webterm/env
 WorkingDirectory=%h
 ExecStartPre=rm -f %t/webterm.sock
-ExecStart=__REPO_DIR__/bin/ttyd -i %t/webterm.sock -b /${WEBTERM_TOKEN} -W -O -P 10 -t "titleFixed=Web Terminal" __REPO_DIR__/bin/webterm-shell
+ExecStart=__REPO_DIR__/bin/ttyd -i %t/webterm.sock -b /${WEBTERM_TOKEN} -W -O -P 10 -t "titleFixed=Web Terminal" -t "fontFamily=${WEBTERM_FONT}" __REPO_DIR__/bin/webterm-shell
 # Don't let the proxy connect before ttyd is listening
 ExecStartPost=sh -c 'for i in $$(seq 50); do [ -S %t/webterm.sock ] && exit 0; sleep 0.1; done; exit 1'

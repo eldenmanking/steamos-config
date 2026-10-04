@@ -5,9 +5,10 @@
 # If the current directory (or this script's directory) is inside the repo,
 # that checkout is used. Otherwise the repo is cloned to ~/git/steamos-config.
 #
-# Usage: ./setup.sh [--tmux] [--no-service]
+# Usage: ./setup.sh [--tmux] [--no-font] [--no-service]
 #   --tmux         run the shell inside tmux (sessions survive tab closes)
-#   --no-service   only download ttyd; don't touch systemd
+#   --no-font      don't install JetBrainsMono Nerd Font
+#   --no-service   only download ttyd (and the font); don't touch systemd
 #
 # Env: WEBTERM_REPO_URL  clone URL (default: the GitHub repo over https)
 #      WEBTERM_CLONE_DIR clone location (default: ~/git/steamos-config)
@@ -16,12 +17,14 @@ set -euo pipefail
 REPO_URL="${WEBTERM_REPO_URL:-https://github.com/eldenmanking/steamos-config.git}"
 CLONE_DIR="${WEBTERM_CLONE_DIR:-$HOME/git/steamos-config}"
 TMUX_MODE=0
+FONT=1
 SERVICE=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --tmux) TMUX_MODE=1; shift ;;
+    --no-font) FONT=0; shift ;;
     --no-service) SERVICE=0; shift ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -30,7 +33,7 @@ die() { echo "error: $*" >&2; exit 1; }
 
 # --- prerequisites (all part of a stock SteamOS / Arch install) --------------
 missing=()
-for cmd in git curl sha256sum; do
+for cmd in git curl sha256sum tar xz; do
   command -v "$cmd" >/dev/null || missing+=("$cmd")
 done
 if [ "$SERVICE" = 1 ]; then
@@ -68,6 +71,8 @@ else
   REPO_DIR="$CLONE_DIR"
 fi
 cd "$REPO_DIR"
+
+if [ "$FONT" = 1 ]; then bash scripts/fetch-font.sh; fi
 
 if [ "$SERVICE" = 0 ]; then
   bash scripts/fetch-ttyd.sh
