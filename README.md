@@ -90,6 +90,13 @@ bash scripts/install-systemd.sh     # also restarts it if running
 bash scripts/uninstall-systemd.sh
 ```
 
+### Steam shortcut keys
+
+In Steam, under **Settings > In Game**:
+
+- Change the main menu shortcut key to <kbd>Win</kbd>+<kbd>Tab</kbd>.
+- Change the quick access shortcut key to <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd>.
+
 ## Configuration
 
 | Setting      | Where                                                     | Default            |
