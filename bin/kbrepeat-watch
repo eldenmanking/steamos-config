@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Watches the X11 active window and, whenever Steam's Big Picture window
+# becomes active, sets the keyboard repeat delay and rate with xset.
+#
+# Env: KBREPEAT_DELAY  ms before a held key repeats (default: KDE's, else 600)
+#      KBREPEAT_RATE   repeats per second           (default: KDE's, else 25)
+#      KBREPEAT_TITLE  Big Picture window title     (default: Steam Big Picture Mode)
+#      KBREPEAT_SETTLE seconds before applying again, in case Steam resets the
+#                      values after its window shows (default: 2)
+set -euo pipefail
+
+[ -n "${DISPLAY:-}" ] || { echo "error: DISPLAY is not set" >&2; exit 1; }
+
+# Prints a value from the [Keyboard] group of KDE's kcminputrc, if any.
+kde_value() {
+  local f="${XDG_CONFIG_HOME:-$HOME/.config}/kcminputrc"
+  [ -f "$f" ] || return 0
+  sed -n '/^\[Keyboard\]/,/^\[/s/^'"$1"'=//p' "$f" | head -n1
+}
+
+DELAY="${KBREPEAT_DELAY:-$(kde_value RepeatDelay)}"
+RATE="${KBREPEAT_RATE:-$(kde_value RepeatRate)}"
+DELAY="${DELAY:-600}"
+RATE="${RATE:-25}"
+# KDE may store these as decimals; xset only takes whole numbers
+DELAY="${DELAY%%.*}"
+RATE="${RATE%%.*}"
+TITLE="${KBREPEAT_TITLE:-Steam Big Picture Mode}"
+SETTLE="${KBREPEAT_SETTLE:-2}"
+
+apply() {
+  xset r rate "$DELAY" "$RATE" && echo "Set key repeat: delay ${DELAY} ms, rate ${RATE}/s"
+}
+
+echo "Watching for \"$TITLE\" on $DISPLAY (delay ${DELAY} ms, rate ${RATE}/s)"
+was_bpm=0
+# Prints a line like "_NET_ACTIVE_WINDOW(WINDOW): window id # 0x4a00007" now
+# and on every change. It exits when the X server goes away.
+while read -r line; do
+  id="${line##* }"
+  is_bpm=0
+  if name="$(xprop -id "$id" _NET_WM_NAME 2>/dev/null)" \
+    && [ "$name" = "_NET_WM_NAME(UTF8_STRING) = \"$TITLE\"" ]; then
+    is_bpm=1
+  fi
+  if [ "$is_bpm" = 1 ] && [ "$was_bpm" = 0 ]; then
+    apply || true
+    (sleep "$SETTLE" && apply) || true &
+  fi
+  was_bpm="$is_bpm"
+done < <(xprop -root -spy _NET_ACTIVE_WINDOW)
+echo "error: lost the X server" >&2
+exit 1

@@ -1,5 +1,8 @@
 # steamos-config: webterm
 
+This repo also has a service that fixes the keyboard repeat delay and rate
+in Steam Big Picture. See [kbrepeat.md](kbrepeat.md).
+
 ## What it is
 
 webterm gives you a real shell in the browser. It runs
