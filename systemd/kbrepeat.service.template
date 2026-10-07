@@ -1,0 +1,13 @@
+[Unit]
+Description=Set keyboard repeat delay and rate when Steam Big Picture opens
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+EnvironmentFile=-%h/.config/kbrepeat/env
+ExecStart=__REPO_DIR__/bin/kbrepeat-watch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
