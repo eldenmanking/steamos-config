@@ -55,6 +55,7 @@ All of these come with a stock SteamOS or Arch install:
 ./setup.sh                 # font + ttyd, install the units, enable the socket
 ./setup.sh --no-font       # skip installing JetBrainsMono Nerd Font
 ./setup.sh --no-service    # just download ttyd (and the font)
+./setup.sh --no-home-units # skip the sudo step for encrypted homes
 ```
 
 When it finishes, it prints your URL, which looks like
@@ -171,7 +172,9 @@ directory, so it can't see `~/.config/systemd/user` and skips
 
 `home-units.service` fixes this for every unit in your home directory, not
 just webterm, in Game Mode and Desktop Mode. It is the one piece installed
-outside your home directory, so the scripts must run as root:
+outside your home directory, so the scripts must run as root. `setup.sh`
+installs it for you (asking for your sudo password) when your home directory
+is encrypted, unless you pass `--no-home-units`. To do it by hand:
 
 ```sh
 sudo bash scripts/install-home-units.sh

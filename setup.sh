@@ -5,9 +5,11 @@
 # If the current directory (or this script's directory) is inside the repo,
 # that checkout is used. Otherwise the repo is cloned to ~/git/steamos-config.
 #
-# Usage: ./setup.sh [--no-font] [--no-service]
-#   --no-font      don't install JetBrainsMono Nerd Font
-#   --no-service   only download ttyd (and the font); don't touch systemd
+# Usage: ./setup.sh [--no-font] [--no-service] [--no-home-units]
+#   --no-font        don't install JetBrainsMono Nerd Font
+#   --no-service     only download ttyd (and the font); don't touch systemd
+#   --no-home-units  don't install home-units.service (asked for with sudo
+#                    only if the home directory is encrypted with dirlock)
 #
 # Env: WEBTERM_REPO_URL  clone URL (default: the GitHub repo over https)
 #      WEBTERM_CLONE_DIR clone location (default: ~/git/steamos-config)
@@ -17,11 +19,13 @@ REPO_URL="${WEBTERM_REPO_URL:-https://github.com/eldenmanking/steamos-config.git
 CLONE_DIR="${WEBTERM_CLONE_DIR:-$HOME/git/steamos-config}"
 FONT=1
 SERVICE=1
+HOME_UNITS=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-font) FONT=0; shift ;;
     --no-service) SERVICE=0; shift ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    --no-home-units) HOME_UNITS=0; shift ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -94,8 +98,10 @@ else
 fi
 
 # With dirlock, the user manager can't see these units at boot (see README)
-if [ ! -e /etc/systemd/user/home-units.service ] && command -v dirlock >/dev/null \
-  && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
-  echo "note: your home directory is encrypted, so webterm won't start after a reboot."
-  echo "      Fix it once with: sudo bash '$REPO_DIR/scripts/install-home-units.sh'"
+if [ "$HOME_UNITS" = 1 ] && [ ! -e /etc/systemd/user/home-units.service ] \
+  && command -v dirlock >/dev/null && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
+  echo "Your home directory is encrypted: installing home-units.service so webterm"
+  echo "starts after a reboot. This writes to /etc and needs sudo."
+  sudo bash scripts/install-home-units.sh \
+    || echo "warning: not installed; webterm won't start after a reboot. Retry with: sudo bash '$REPO_DIR/scripts/install-home-units.sh'" >&2
 fi
