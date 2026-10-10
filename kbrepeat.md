@@ -24,9 +24,9 @@ Mode and Desktop Mode, logging out) waits for the next one. If the script
 itself fails, systemd starts it again after 5 s.
 
 With an encrypted home directory, the user manager can't see the unit at boot.
-[`home-units.service`](README.md#encrypted-home-directory-dirlock) starts
-`default.target` once the home is unlocked, which starts this too, so install
-that as well.
+[`home-units.service`](README.md#encrypted-home-directory-dirlock) starts it
+once the home is unlocked, along with the other units enabled in
+`~/.config/systemd/user`, so install that as well.
 
 ## Requirements
 
