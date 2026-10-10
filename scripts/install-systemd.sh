@@ -2,8 +2,8 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/webterm"
+UNIT_DIR="$HOME/.config/systemd/user"
+CONF_DIR="$HOME/.config/webterm"
 
 PROXYD=""
 for p in /usr/lib/systemd/systemd-socket-proxyd /lib/systemd/systemd-socket-proxyd; do

@@ -10,7 +10,7 @@
 # starts its own units then, since the reload made them visible.
 set -u
 
-dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+dir="$HOME/.config/systemd/user"
 
 # Encrypted names hide ~/.config until the home directory is unlocked
 until [ -d "$HOME/.config" ]; do sleep 2; done

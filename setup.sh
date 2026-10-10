@@ -89,7 +89,7 @@ bash scripts/install-systemd.sh
 
 # Poke the socket once to prove activation works (it exits again when idle)
 # shellcheck disable=SC1091
-. "${XDG_CONFIG_HOME:-$HOME/.config}/webterm/env"
+. "$HOME/.config/webterm/env"
 URL="http://127.0.0.1:3000/${WEBTERM_TOKEN:+$WEBTERM_TOKEN/}"
 if curl -fsS --noproxy '*' -o /dev/null --max-time 10 "$URL"; then
   echo "Check: $URL answered, socket activation works."
