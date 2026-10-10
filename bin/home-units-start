@@ -2,8 +2,8 @@
 # Run by home-units.service. Installed to /etc/steamos-config/home-units-start,
 # outside the encrypted home. Waits for dirlock to unlock the home directory,
 # reloads the user manager so it sees ~/.config/systemd/user, then starts
-# exactly the units enabled there. Nothing else is started, so units that already ran and exited
-# are not run again.
+# exactly the units enabled there. Nothing else is started, so units that
+# already ran and exited are not run again.
 #
 # Units are started only for targets that are already up. A target that comes
 # up later (e.g. graphical-session.target when you switch to Desktop Mode)
