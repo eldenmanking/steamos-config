@@ -97,8 +97,14 @@ else
   echo "warning: $URL did not answer; see: journalctl --user -u webterm.service -u webterm-ttyd.service" >&2
 fi
 
-# With dirlock, the user manager can't see these units at boot (see README)
-if [ "$HOME_UNITS" = 1 ] && [ ! -e /etc/systemd/user/home-units.service ] \
+# With dirlock, the user manager can't see these units at boot (see README).
+# Installed copies are compared with the repo, so updates get reinstalled too.
+home_units_current() {
+  cmp -s bin/home-units-start /etc/home-units/start \
+    && cmp -s systemd/home-units.service /etc/systemd/user/home-units.service \
+    && cmp -s systemd/home-units.keep.conf /etc/atomic-update.conf.d/home-units.conf
+}
+if [ "$HOME_UNITS" = 1 ] && ! home_units_current \
   && command -v dirlock >/dev/null && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
   echo "Your home directory is encrypted: installing home-units.service so webterm"
   echo "starts after a reboot. This writes to /etc and needs sudo."

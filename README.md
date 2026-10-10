@@ -174,7 +174,8 @@ directory, so it can't see `~/.config/systemd/user` and skips
 just webterm, in Game Mode and Desktop Mode. It is the one piece installed
 outside your home directory, so the scripts must run as root. `setup.sh`
 installs it for you (asking for your sudo password) when your home directory
-is encrypted, unless you pass `--no-home-units`. To do it by hand:
+is encrypted, and reinstalls it when the repo has a newer version, unless
+you pass `--no-home-units`. To do it by hand:
 
 ```sh
 sudo bash scripts/install-home-units.sh
@@ -184,15 +185,24 @@ sudo bash scripts/uninstall-home-units.sh
 What it installs:
 
 - `/etc/systemd/user/home-units.service`, enabled for all users. Each user
-  manager sees it while the home directory is still locked. It waits until
-  `~/.config` is readable, runs `systemctl --user daemon-reload` and starts
-  `default.target`, `sockets.target`, `timers.target` and `paths.target`, which
-  starts whatever was skipped.
+  manager sees it while the home directory is still locked. It runs
+  `/etc/home-units/start` (from `bin/home-units-start`), which waits until
+  `~/.config` is readable and runs `systemctl --user daemon-reload`. Then, for
+  each `~/.config/systemd/user/<target>.wants/` (and `.requires/`) whose target
+  is already up, it starts the units linked there. Nothing else is started, so
+  SteamOS's own units that already ran aren't run again. A target that isn't
+  up yet, like `graphical-session.target` before Desktop Mode, starts its units
+  itself later.
 - `/etc/atomic-update.conf.d/home-units.conf`, a keep list. Since SteamOS 3.6
   an update drops every change in `/etc` that isn't on a keep list (into
   `/etc/previous`). The default list, `/usr/lib/rauc/atomic-update-keep.conf`,
   covers `/etc/systemd/system` but not `/etc/systemd/user`, so this one names
-  the unit and its enablement symlink.
+  the unit, its enablement symlink and `/etc/home-units/start`.
+
+Which units it starts is up to you: `systemctl --user enable foo.service`
+adds a link under the target named in the unit's `WantedBy=`, and
+`systemctl --user disable` removes it. `journalctl --user -b -u home-units`
+shows what it started this boot.
 
 To check it after a reboot: `systemctl --user status home-units.service`
 should be `active (exited)` and `webterm.socket` `active (listening)`. To test

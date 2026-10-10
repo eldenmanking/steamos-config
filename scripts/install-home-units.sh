@@ -8,6 +8,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+install -Dm755 "$REPO_DIR/bin/home-units-start" /etc/home-units/start
 install -Dm644 "$REPO_DIR/systemd/home-units.service" /etc/systemd/user/home-units.service
 install -Dm644 "$REPO_DIR/systemd/home-units.keep.conf" /etc/atomic-update.conf.d/home-units.conf
 systemctl --global enable home-units.service
