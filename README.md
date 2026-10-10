@@ -81,7 +81,8 @@ What gets installed:
 - **ttyd:** `scripts/fetch-ttyd.sh` downloads ttyd 1.7.7 to `bin/ttyd`
   (git ignores it) and checks it against a pinned SHA-256.
 - **Units:** they go into `~/.config/systemd/user/`. Everything stays in
-  your home directory, so SteamOS updates don't remove it.
+  your home directory, so SteamOS updates don't remove it. With an encrypted
+  home directory, also see [Encrypted home directory](#encrypted-home-directory-dirlock).
 
 To install or remove just the units:
 
@@ -159,6 +160,42 @@ bash scripts/restart.sh
 
 The value can be any CSS font list without an `=`. Run
 `fc-list : family | grep -i nerd` to see the exact names that are installed.
+
+## Encrypted home directory (dirlock)
+
+With an encrypted home directory, webterm doesn't start after a reboot. The
+user manager (`systemd --user`) starts before dirlock unlocks the home
+directory, so it can't see `~/.config/systemd/user` and skips
+`webterm.socket`. `systemctl --user status webterm.socket` then shows
+`inactive (dead)` with no log entries for this boot.
+
+`home-units.service` fixes this for every unit in your home directory, not
+just webterm, in Game Mode and Desktop Mode. It is the one piece installed
+outside your home directory, so it needs `sudo`:
+
+```sh
+bash scripts/install-home-units.sh
+bash scripts/uninstall-home-units.sh
+```
+
+What it installs:
+
+- `/etc/systemd/user/home-units.service`, enabled for all users. Each user
+  manager sees it while the home directory is still locked. It waits until
+  `~/.config` is readable, runs `systemctl --user daemon-reload` and starts
+  `default.target`, `sockets.target`, `timers.target` and `paths.target`, which
+  starts whatever was skipped.
+- `/etc/atomic-update.conf.d/home-units.conf`, a keep list. Since SteamOS 3.6
+  an update drops every change in `/etc` that isn't on a keep list (into
+  `/etc/previous`). The default list, `/usr/lib/rauc/atomic-update-keep.conf`,
+  covers `/etc/systemd/system` but not `/etc/systemd/user`, so this one names
+  the unit and its enablement symlink.
+
+To check it after a reboot: `systemctl --user status home-units.service`
+should be `active (exited)` and `webterm.socket` `active (listening)`. To test
+that it survives an update, switch branches and update
+(`sudo steamos-select-branch beta && sudo steamos-atomupd-client`), reboot,
+and check that `/etc/systemd/user/home-units.service` is still there.
 
 ## Security
 

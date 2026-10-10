@@ -1,0 +1,19 @@
+[Unit]
+Description=Start user units stored in the encrypted home directory
+# Installed to /etc/systemd/user by scripts/install-home-units.sh, so every
+# user manager sees it while the home directory is still locked.
+#
+# With dirlock, the user manager starts before the home directory is unlocked.
+# It can't read ~/.config/systemd/user then, so units enabled there (like
+# webterm.socket) never start. This waits for the unlock (encrypted names
+# hide ~/.config until then), reloads the user manager so it sees those units,
+# and starts the targets they are enabled under.
+
+[Service]
+ExecStart=/bin/sh -c 'until [ -d "%h/.config" ]; do sleep 2; done; systemctl --user daemon-reload && exec systemctl --user start --no-block default.target sockets.target timers.target paths.target'
+# Stay "active" after exiting: starting default.target again must not start
+# this unit again, or it would reload and restart forever.
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

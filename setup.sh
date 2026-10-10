@@ -92,3 +92,10 @@ if curl -fsS --noproxy '*' -o /dev/null --max-time 10 "$URL"; then
 else
   echo "warning: $URL did not answer; see: journalctl --user -u webterm.service -u webterm-ttyd.service" >&2
 fi
+
+# With dirlock, the user manager can't see these units at boot (see README)
+if [ ! -e /etc/systemd/user/home-units.service ] && command -v dirlock >/dev/null \
+  && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
+  echo "note: your home directory is encrypted, so webterm won't start after a reboot."
+  echo "      Fix it once with: bash '$REPO_DIR/scripts/install-home-units.sh' (uses sudo)"
+fi
