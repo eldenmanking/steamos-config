@@ -7,10 +7,10 @@ Description=Start user units stored in the encrypted home directory
 # It can't read ~/.config/systemd/user then, so units enabled there (like
 # webterm.socket) never start. This waits for the unlock (encrypted names
 # hide ~/.config until then), reloads the user manager so it sees those units,
-# and starts just those units; see /etc/home-units/start.
+# and starts just those units; see /etc/steamos-config/home-units-start.
 
 [Service]
-ExecStart=/etc/home-units/start
+ExecStart=/etc/steamos-config/home-units-start
 # Show as "active (exited)" once done, and don't run again on a later start of
 # default.target.
 RemainAfterExit=yes

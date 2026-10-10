@@ -100,9 +100,9 @@ fi
 # With dirlock, the user manager can't see these units at boot (see README).
 # Installed copies are compared with the repo, so updates get reinstalled too.
 home_units_current() {
-  cmp -s bin/home-units-start /etc/home-units/start \
+  cmp -s bin/home-units-start /etc/steamos-config/home-units-start \
     && cmp -s systemd/home-units.service /etc/systemd/user/home-units.service \
-    && cmp -s systemd/home-units.keep.conf /etc/atomic-update.conf.d/home-units.conf
+    && cmp -s systemd/home-units.keep.conf /etc/atomic-update.conf.d/steamos-config.conf
 }
 if [ "$HOME_UNITS" = 1 ] && ! home_units_current \
   && command -v dirlock >/dev/null && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
