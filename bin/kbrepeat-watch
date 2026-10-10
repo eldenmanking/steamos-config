@@ -2,14 +2,19 @@
 # Watches the X11 active window and, whenever Steam's Big Picture window
 # becomes active, sets the keyboard repeat delay and rate with xset.
 #
+# It runs for the whole user session (started under default.target, which
+# home-units.service starts once an encrypted home is unlocked), so it may start
+# before any X server exists, and Desktop Mode and Game Mode each bring their
+# own. It takes DISPLAY from the user manager's environment, which the
+# graphical session updates, waits until that display answers, watches it until
+# it goes away, then waits for the next one.
+#
 # Env: KBREPEAT_DELAY  ms before a held key repeats (default: KDE's, else 600)
 #      KBREPEAT_RATE   repeats per second           (default: KDE's, else 25)
 #      KBREPEAT_TITLE  Big Picture window title     (default: Steam Big Picture Mode)
 #      KBREPEAT_SETTLE seconds before applying again, in case Steam resets the
 #                      values after its window shows (default: 2)
 set -euo pipefail
-
-[ -n "${DISPLAY:-}" ] || { echo "error: DISPLAY is not set" >&2; exit 1; }
 
 # Prints a value from the [Keyboard] group of KDE's kcminputrc, if any.
 kde_value() {
@@ -32,22 +37,45 @@ apply() {
   xset r rate "$DELAY" "$RATE" && echo "Set key repeat: delay ${DELAY} ms, rate ${RATE}/s"
 }
 
-echo "Watching for \"$TITLE\" on $DISPLAY (delay ${DELAY} ms, rate ${RATE}/s)"
-was_bpm=0
-# Prints a line like "_NET_ACTIVE_WINDOW(WINDOW): window id # 0x4a00007" now
-# and on every change. It exits when the X server goes away.
-while read -r line; do
-  id="${line##* }"
-  is_bpm=0
-  if name="$(xprop -id "$id" _NET_WM_NAME 2>/dev/null)" \
-    && [ "$name" = "_NET_WM_NAME(UTF8_STRING) = \"$TITLE\"" ]; then
-    is_bpm=1
+# Prints the user manager's DISPLAY, or our own if it has none.
+current_display() {
+  local d
+  d="$(systemctl --user show-environment 2>/dev/null | sed -n 's/^DISPLAY=//p')"
+  echo "${d:-${DISPLAY:-}}"
+}
+
+# Watches $DISPLAY until its X server goes away. Returns right away (to be
+# retried) until a window manager has created the _NET_ACTIVE_WINDOW atom:
+# xprop -spy never reports an atom that didn't exist when it started.
+watch_display() {
+  local line id name is_bpm was_bpm=0
+  case "$(xprop -root _NET_ACTIVE_WINDOW 2>&1)" in
+    *"no such atom"*) return 0 ;;
+  esac
+  echo "Watching for \"$TITLE\" on $DISPLAY (delay ${DELAY} ms, rate ${RATE}/s)"
+  # Prints a line like "_NET_ACTIVE_WINDOW(WINDOW): window id # 0x4a00007" now
+  # and on every change. It exits when the X server goes away.
+  while read -r line; do
+    id="${line##* }"
+    is_bpm=0
+    if name="$(xprop -id "$id" _NET_WM_NAME 2>/dev/null)" \
+      && [ "$name" = "_NET_WM_NAME(UTF8_STRING) = \"$TITLE\"" ]; then
+      is_bpm=1
+    fi
+    if [ "$is_bpm" = 1 ] && [ "$was_bpm" = 0 ]; then
+      apply || true
+      (sleep "$SETTLE" && apply) || true &
+    fi
+    was_bpm="$is_bpm"
+  done < <(xprop -root -spy _NET_ACTIVE_WINDOW 2>/dev/null)
+  echo "Lost $DISPLAY"
+}
+
+while :; do
+  DISPLAY="$(current_display)"
+  export DISPLAY
+  if [ -n "$DISPLAY" ] && xset q >/dev/null 2>&1; then
+    watch_display
   fi
-  if [ "$is_bpm" = 1 ] && [ "$was_bpm" = 0 ]; then
-    apply || true
-    (sleep "$SETTLE" && apply) || true &
-  fi
-  was_bpm="$is_bpm"
-done < <(xprop -root -spy _NET_ACTIVE_WINDOW)
-echo "error: lost the X server" >&2
-exit 1
+  sleep 5
+done

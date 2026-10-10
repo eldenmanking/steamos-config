@@ -15,11 +15,6 @@ sed -e "s|__REPO_DIR__|$REPO_DIR|g" "$REPO_DIR/systemd/kbrepeat.service.template
 
 systemctl --user daemon-reload
 systemctl --user enable kbrepeat.service
-# Start (or restart, to pick up changes) only inside a graphical session;
-# otherwise it starts with the next one.
-if systemctl --user is-active --quiet graphical-session.target; then
-  systemctl --user restart kbrepeat.service
-  echo "Installed and started kbrepeat.service"
-else
-  echo "Installed kbrepeat.service (starts with the next graphical session)"
-fi
+# Restart so a re-install picks up changes
+systemctl --user restart kbrepeat.service
+echo "Installed and started kbrepeat.service"

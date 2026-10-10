@@ -12,12 +12,21 @@ may change the values again just after its window shows, so the script applies
 them a second time 2 s later.
 
 This happens each time Big Picture becomes active, including when you switch
-back to it from another window. Nothing is polled; the script just waits for
-X to report a change.
+back to it from another window. While it watches a display, nothing is
+polled; the script just waits for X to report a change.
 
-The service is a systemd user service tied to `graphical-session.target`, so
-it starts and stops with your desktop session. If the X server goes away, the
-script exits and systemd starts it again after 5 s.
+The service is a systemd user service under `default.target`, so it runs
+for the whole user session rather than one graphical session. It finds the X
+display itself: it reads `DISPLAY` from the user manager's environment (which
+the desktop session sets), checks every 5 s until that display answers and has a
+window manager, watches it, and when the X server goes away (switching between Game
+Mode and Desktop Mode, logging out) waits for the next one. If the script
+itself fails, systemd starts it again after 5 s.
+
+With an encrypted home directory, the user manager can't see the unit at boot.
+[`home-units.service`](README.md#encrypted-home-directory-dirlock) starts
+`default.target` once the home is unlocked, which starts this too, so install
+that as well.
 
 ## Requirements
 
@@ -28,7 +37,7 @@ script exits and systemd starts it again after 5 s.
 ## Install
 
 ```sh
-bash scripts/install-kbrepeat.sh     # also restarts it if running
+bash scripts/install-kbrepeat.sh     # also restarts it, to apply changes
 bash scripts/uninstall-kbrepeat.sh
 ```
 

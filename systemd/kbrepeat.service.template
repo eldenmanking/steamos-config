@@ -1,7 +1,8 @@
 [Unit]
 Description=Set keyboard repeat delay and rate when Steam Big Picture opens
-PartOf=graphical-session.target
-After=graphical-session.target
+# Runs for the whole user session and finds the X display itself (see
+# bin/kbrepeat-watch), so it doesn't depend on graphical-session.target. With an
+# encrypted home, home-units.service starts default.target once it's unlocked.
 
 [Service]
 EnvironmentFile=-%h/.config/kbrepeat/env
@@ -10,4 +11,4 @@ Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target
