@@ -171,11 +171,11 @@ directory, so it can't see `~/.config/systemd/user` and skips
 
 `home-units.service` fixes this for every unit in your home directory, not
 just webterm, in Game Mode and Desktop Mode. It is the one piece installed
-outside your home directory, so it needs `sudo`:
+outside your home directory, so the scripts must run as root:
 
 ```sh
-bash scripts/install-home-units.sh
-bash scripts/uninstall-home-units.sh
+sudo bash scripts/install-home-units.sh
+sudo bash scripts/uninstall-home-units.sh
 ```
 
 What it installs:

@@ -97,5 +97,5 @@ fi
 if [ ! -e /etc/systemd/user/home-units.service ] && command -v dirlock >/dev/null \
   && dirlock status "$HOME" 2>/dev/null | grep -q '^Encrypted'; then
   echo "note: your home directory is encrypted, so webterm won't start after a reboot."
-  echo "      Fix it once with: bash '$REPO_DIR/scripts/install-home-units.sh' (uses sudo)"
+  echo "      Fix it once with: sudo bash '$REPO_DIR/scripts/install-home-units.sh'"
 fi
