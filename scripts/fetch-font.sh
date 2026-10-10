@@ -6,7 +6,7 @@ set -euo pipefail
 NF_VERSION=v3.4.0
 SHA256=ef552a3e638f25125c6ad4c51176a6adcdce295ab1d2ffacf0db060caf8c1582
 FAMILY="JetBrainsMono Nerd Font Mono"
-DEST="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/JetBrainsMonoNerdFont"
+DEST="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
 
 if command -v fc-list >/dev/null && fc-list : family | grep -qF "$FAMILY"; then
   echo "$FAMILY already installed"
