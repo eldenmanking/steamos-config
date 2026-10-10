@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+UNIT_DIR="$HOME/.config/systemd/user"
 
 for cmd in xprop xset; do
   command -v "$cmd" >/dev/null || { echo "error: missing $cmd" >&2; exit 1; }

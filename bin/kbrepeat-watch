@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Prints a value from the [Keyboard] group of KDE's kcminputrc, if any.
 kde_value() {
-  local f="${XDG_CONFIG_HOME:-$HOME/.config}/kcminputrc"
+  local f="$HOME/.config/kcminputrc"
   [ -f "$f" ] || return 0
   sed -n '/^\[Keyboard\]/,/^\[/s/^'"$1"'=//p' "$f" | head -n1
 }
