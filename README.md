@@ -175,6 +175,7 @@ terminal would eat them. webterm hands these back to the browser:
 - <kbd>Ctrl</kbd>+<kbd>Tab</kbd> and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd>
 - <kbd>Ctrl</kbd>+<kbd>1</kbd> to <kbd>Ctrl</kbd>+<kbd>9</kbd>
 - <kbd>Ctrl</kbd>+<kbd>PgUp</kbd> and <kbd>Ctrl</kbd>+<kbd>PgDn</kbd>
+- <kbd>F11</kbd>, so it leaves fullscreen instead of reaching the shell
 
 Every other key, like <kbd>Ctrl</kbd>+<kbd>W</kbd> or <kbd>Ctrl</kbd>+<kbd>R</kbd>,
 still goes to the shell.

@@ -1,9 +1,10 @@
 <script>
 window.addEventListener('keydown', (e) => {
-  if (!e.ctrlKey || e.altKey || e.metaKey) return;
-  if (e.key === 'Tab' ||                               // Ctrl+Tab, Ctrl+Shift+Tab
-      e.key === 'PageUp' || e.key === 'PageDown' ||    // Ctrl+PgUp/PgDn
-      (!e.shiftKey && /^Digit[1-9]$/.test(e.code))) {  // Ctrl+1..9
+  if (e.altKey || e.metaKey) return;
+  if ((!e.ctrlKey && !e.shiftKey && e.key === 'F11') ||  // F11 (toggle fullscreen)
+      (e.ctrlKey && (e.key === 'Tab' ||                  // Ctrl+Tab, Ctrl+Shift+Tab
+                     e.key === 'PageUp' || e.key === 'PageDown' ||    // Ctrl+PgUp/PgDn
+                     (!e.shiftKey && /^Digit[1-9]$/.test(e.code))))) { // Ctrl+1..9
     e.stopImmediatePropagation();  // xterm never sees it; no preventDefault, so the browser acts
   }
 }, true);
