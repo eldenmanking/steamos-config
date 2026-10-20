@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# TODO(andywang): add comment
+# Builds the page that bin/webterm-ttyd passes to ttyd with -I: ttyd's stock page with web/tab-keys.html appended.
+# The stock page bundles ttyd's browser client, so it is fetched from a throwaway ttyd on a temporary UNIX socket and
+# saved under the hash of bin/ttyd. Runs from install-systemd.sh, so it is redone whenever ttyd is (re)installed.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

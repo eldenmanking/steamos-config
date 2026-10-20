@@ -3,8 +3,8 @@
 
 systemd-socket-activate plays webterm.socket: it listens on a TCP port and
 starts systemd-socket-proxyd on the first connection, exactly like the unit.
-Checks: secret path, origin check, shell round-trip, and idle exit.
-TODO(andywang): update comment
+Checks: stock page without a built index, secret path, custom index with the tab-key script, origin check, shell
+round-trip, and idle exit.
 """
 import base64
 import hashlib
