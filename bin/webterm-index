@@ -7,25 +7,8 @@ TTYD="$REPO_DIR/bin/ttyd"
 SNIPPET="$REPO_DIR/web/tab-keys.html"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/webterm"
 
-usage() { echo "usage: webterm-index build | webterm-index env ENV_FILE" >&2; exit 2; }
-
 [ -x "$TTYD" ] || { echo "error: $TTYD not found" >&2; exit 1; }
 index="$STATE_DIR/index-$(sha256sum < "$TTYD" | cut -d' ' -f1).html"
-
-case "${1:-}" in
-  build) ;;
-  env)
-    [ $# -eq 2 ] || usage
-    if [ -s "$index" ]; then
-      printf 'WEBTERM_INDEX_ARGS=-I %s\n' "$index" > "$2"
-    else
-      printf 'WEBTERM_INDEX_ARGS=\n' > "$2"
-      echo "warning: no page built for this ttyd, serving the stock page; run scripts/restart.sh" >&2
-    fi
-    exit 0
-    ;;
-  *) usage ;;
-esac
 
 [ -s "$SNIPPET" ] || { echo "error: $SNIPPET not found" >&2; exit 1; }
 

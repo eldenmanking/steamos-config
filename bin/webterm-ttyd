@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# TODO(andywang): add comment
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TTYD="$REPO_DIR/bin/ttyd"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/webterm"
+
+index="$STATE_DIR/index-$(sha256sum < "$TTYD" | cut -d' ' -f1).html"
+if [ -s "$index" ]; then
+  set -- -I "$index" "$@"
+else
+  echo "warning: no page built for this ttyd, serving the stock page; run scripts/restart.sh" >&2
+fi
+exec "$TTYD" "$@"

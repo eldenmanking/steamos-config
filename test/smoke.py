@@ -120,29 +120,37 @@ def main():
     rundir = tempfile.mkdtemp()
     sock = os.path.join(rundir, "webterm.sock")
     env = {**os.environ, "SHELL": "/bin/bash"}
-    webterm_index = os.path.join(REPO, "bin", "webterm-index")
-    index_env = os.path.join(rundir, "webterm-index.env")
-    index_run_env = {**env, "XDG_RUNTIME_DIR": rundir, "XDG_STATE_HOME": rundir}
-
-    def index_args():
-        subprocess.run([webterm_index, "env", index_env], check=True, env=index_run_env,
-                       stderr=subprocess.DEVNULL)
-        with open(index_env) as f:
-            return f.read().strip().split("=", 1)[1].split()
-
-    if index_args() != []:
-        fail("index args set before the page was built")
-    print("ok: no page built, ttyd gets no -I")
-    subprocess.run([webterm_index, "build"], check=True, env=index_run_env, stdout=subprocess.DEVNULL)
-    with open(ttyd, "rb") as f:
-        index = os.path.join(rundir, "webterm", f"index-{hashlib.sha256(f.read()).hexdigest()}.html")
-    if index_args() != ["-I", index]:
-        fail(f"unexpected index args: {index_args()}")
+    env = {**env, "XDG_RUNTIME_DIR": rundir, "XDG_STATE_HOME": rundir}
+    launcher = os.path.join(REPO, "bin", "webterm-ttyd")
     with open(os.path.join(REPO, "web", "tab-keys.html"), "rb") as f:
         snippet = f.read()
+
+    fallback_sock = os.path.join(rundir, "fallback.sock")
+    fallback = subprocess.Popen([launcher, "-i", fallback_sock, "true"], env=env,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    procs.append(fallback)
+    page = None
+    for _ in range(50):
+        r = subprocess.run(["curl", "-fsS", "--noproxy", "*", "--unix-socket", fallback_sock,
+                            "http://localhost/"], capture_output=True)
+        if r.returncode == 0:
+            page = r.stdout
+            break
+        time.sleep(0.1)
+    fallback.kill()
+    if not page or b"<html" not in page or page.endswith(snippet):
+        fail("without a built page, the launcher did not serve the stock page")
+    print("ok: no page built, stock page served")
+
+    subprocess.run([os.path.join(REPO, "bin", "webterm-index")], check=True, env=env,
+                   stdout=subprocess.DEVNULL)
+    with open(ttyd, "rb") as f:
+        index = os.path.join(rundir, "webterm", f"index-{hashlib.sha256(f.read()).hexdigest()}.html")
+    if not os.path.isfile(index):
+        fail(f"page not built at {index}")
     procs.append(subprocess.Popen(
-        [ttyd, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
-         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}", *index_args(),
+        [launcher, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
+         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}",
          os.path.join(REPO, "bin", "webterm-shell")],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     for _ in range(50):
