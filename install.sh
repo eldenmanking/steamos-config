@@ -108,7 +108,7 @@ run_features() {
   done
   for feature in $order; do
     if $uninstall; then
-      fn="$(feature_uninstall_function "$feature")"
+      fn="$(uninstall_feature_function "$feature")"
       if ! declare -F "$fn" >/dev/null; then
         info "Nothing to uninstall for $feature"
         continue

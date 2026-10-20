@@ -36,6 +36,6 @@ feature_function() {
 }
 
 # TODO(andywang): add comment
-feature_uninstall_function() {
-  printf 'feature_%s_uninstall' "${1//-/_}"
+uninstall_feature_function() {
+  printf 'uninstall_feature_%s' "${1//-/_}"
 }

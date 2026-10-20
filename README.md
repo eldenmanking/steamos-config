@@ -52,54 +52,40 @@ All of these come with a stock SteamOS or Arch install:
 ## Quick start
 
 ```sh
-./setup.sh                 # font + ttyd, install the units, enable the socket
-./setup.sh --no-font       # skip installing JetBrainsMono Nerd Font
-./setup.sh --no-service    # just download ttyd (and the font)
-./setup.sh --no-home-units # skip the sudo step for encrypted homes
+git clone https://github.com/eldenmanking/steamos-config.git ~/git/steamos-config
+cd ~/git/steamos-config
+./install.sh --all                 # font + ttyd, install the units, enable the socket
+./install.sh --all --no-font       # skip installing JetBrainsMono Nerd Font
+./install.sh --all --no-service    # just download ttyd (and the font)
+./install.sh --all --no-home-units # skip the sudo step for encrypted homes
 ```
 
 When it finishes, it prints your URL, which looks like
 `http://localhost:3000/<token>/`. Bookmark it. The token is explained in
 [Security](#security).
 
-`setup.sh` works out which checkout to use:
-
-- If you run it from inside a steamos-config checkout (or run the copy inside
-  one), it uses that checkout.
-- Otherwise it clones the repo to `~/git/steamos-config`. If that clone
-  already exists, it updates it with `git pull --ff-only` and uses it.
-
-`WEBTERM_CLONE_DIR` and `WEBTERM_REPO_URL` override the clone location and
-URL. If the repo is private, cloning needs your GitHub credentials (for
-example an SSH URL in `WEBTERM_REPO_URL`).
+If the repo is private, cloning needs your GitHub credentials (for example
+an SSH URL). To update, `git pull` and run `./install.sh --all` again.
 
 What gets installed:
 
-- **Font:** `scripts/fetch-font.sh` installs JetBrainsMono Nerd Font
+- **Font** (`--font`): installs JetBrainsMono Nerd Font
   (Nerd Fonts v3.4.0, the same release your dotfiles use) into
   `~/.local/share/fonts/JetBrainsMonoNerdFont/`, after checking its SHA-256.
   It does nothing if `fc-list` already lists the font.
-- **ttyd:** `scripts/fetch-ttyd.sh` downloads ttyd 1.7.7 to `bin/ttyd`
+- **ttyd** (`--ttyd`): downloads ttyd 1.7.7 to `bin/ttyd`
   (git ignores it) and checks it against a pinned SHA-256.
-- **Units:** they go into `~/.config/systemd/user/`. Everything stays in
+- **Units** (`--webterm`): they go into `~/.config/systemd/user/`. Everything stays in
   your home directory, so SteamOS updates don't remove it. With an encrypted
   home directory, also see [Encrypted home directory](#encrypted-home-directory-dirlock).
 
-To install or remove just the units:
-
-```sh
-bash scripts/install-systemd.sh     # also restarts it if running
-bash scripts/uninstall-systemd.sh
-```
-
-These scripts, like `setup.sh`, run `install.sh`, which installs each part as
-a feature. Use it directly to pick features, remove them, or preview what
-would change:
+Each part is a feature, so you can install, remove or preview just one:
 
 ```sh
 ./install.sh --help
-./install.sh --webterm --dry-run
+./install.sh --webterm             # just the units; also restarts it if running
 ./install.sh --uninstall --webterm
+./install.sh --all --dry-run       # print what would change
 ```
 
 ### Steam shortcut keys
@@ -130,7 +116,7 @@ as described in [Applying changes](#applying-changes).
 ## Applying changes
 
 ```sh
-bash scripts/restart.sh
+./install.sh --webterm
 ```
 
 You don't need to close the browser. The script:
@@ -162,7 +148,7 @@ How it works:
 - ttyd's `-t key=value` passes any option straight to xterm.js, so the unit
   runs `-t "fontFamily=${WEBTERM_FONT}"`. No custom build is needed.
 - The page only names the font. The browser draws it from fonts installed
-  on the machine it runs on, which is the Deck here. That's why `setup.sh`
+  on the machine it runs on, which is the Deck here. That's why `install.sh`
   installs the font. Flatpak browsers (the default on SteamOS) should also
   see `~/.local/share/fonts`.
 - If the browser was already open when the font was installed, restart it.
@@ -173,7 +159,7 @@ Open tabs switch fonts when they reconnect:
 
 ```sh
 echo 'WEBTERM_FONT=JetBrainsMonoNL Nerd Font Mono, monospace' >> ~/.config/webterm/env
-bash scripts/restart.sh
+./install.sh --webterm
 ```
 
 The value can be any CSS font list without an `=`. Run
@@ -200,15 +186,15 @@ How it works:
   keys before xterm.js does and stops them from reaching it, without
   cancelling the browser's own handling.
 - The stock page bundles ttyd's browser client, which must match the ttyd
-  binary. So when the units are installed (`setup.sh`, `install-systemd.sh`
-  or `restart.sh`), `bin/webterm-index` starts a throwaway ttyd on a
+  binary. So when the units are installed (`./install.sh --webterm`, also
+  part of `--all`), `bin/webterm-index` starts a throwaway ttyd on a
   temporary UNIX socket, fetches its page, appends the script and writes
   `~/.local/state/webterm/index-<sha256 of bin/ttyd>.html`.
 - `webterm-ttyd.service` runs ttyd through `bin/webterm-ttyd`, which hashes
   `bin/ttyd` on every start and adds `-I` only if a page for that hash exists. If not, ttyd serves its stock
   page: the terminal works, but without the tab shortcuts in fullscreen.
   `journalctl --user -u webterm-ttyd.service` then shows a warning, and
-  `bash scripts/restart.sh` builds the page again.
+  `./install.sh --webterm` builds the page again.
 
 After changing `web/tab-keys.html`, apply it as described in
 [Applying changes](#applying-changes) and reload open tabs.
@@ -223,14 +209,14 @@ directory, so it can't see `~/.config/systemd/user` and skips
 
 `home-units.service` fixes this for every unit in your home directory, not
 just webterm, in Game Mode and Desktop Mode. It is the one piece installed
-outside your home directory, so the scripts must run as root. `setup.sh`
+outside your home directory, so it must be installed as root. `install.sh --all`
 installs it for you (asking for your sudo password) when your home directory
 is encrypted, and reinstalls it when the repo has a newer version, unless
 you pass `--no-home-units`. To do it by hand:
 
 ```sh
-sudo bash scripts/install-home-units.sh
-sudo bash scripts/uninstall-home-units.sh
+sudo ./install.sh --home-units
+sudo ./install.sh --uninstall --home-units
 ```
 
 What it installs:
@@ -285,7 +271,7 @@ can do anything you can.
 ## Keeping work with tmux
 
 Bare shells are disposable. A bare shell ends when you close its tab, when
-webterm stops on idle, and when you run `scripts/restart.sh`.
+webterm stops on idle, and when you run `./install.sh --webterm`.
 
 To keep something running, start `tmux` in the terminal. The tmux server
 survives all three, and you reattach with `tmux attach` on your next visit.
@@ -301,7 +287,7 @@ the tmux server. That's expected.
 
 ## Upgrading from the Node.js version
 
-Re-run `./setup.sh`. The unit names stay the same, so it overwrites the old
+Re-run `./install.sh --all`. The unit names stay the same, so it overwrites the old
 units. You can then delete the leftover `node_modules/` folder.
 
 ## Testing

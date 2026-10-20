@@ -12,6 +12,6 @@ index="$STATE_DIR/index-$(sha256sum < "$TTYD" | cut -d' ' -f1).html"
 if [ -s "$index" ]; then
   set -- -I "$index" "$@"
 else
-  echo "warning: no page built for this ttyd, serving the stock page; run scripts/restart.sh" >&2
+  echo "warning: no page built for this ttyd, serving the stock page; run ./install.sh --webterm" >&2
 fi
 exec "$TTYD" "$@"

@@ -1,5 +1,6 @@
 [Unit]
 Description=Start user units stored in the encrypted home directory
+# TODO(andywang): update comment
 # Installed to /etc/systemd/user by scripts/install-home-units.sh, so every
 # user manager sees it while the home directory is still locked.
 #

@@ -67,7 +67,7 @@ feature_home_units() {
     || warn "not installed; webterm won't start after a reboot. Retry with: sudo bash '$REPO_DIR/install.sh' --home-units"
 }
 
-feature_home_units_uninstall() {
+uninstall_feature_home_units() {
   if ! is_root; then
     run sudo bash "$REPO_DIR/install.sh" --uninstall --home-units
     return

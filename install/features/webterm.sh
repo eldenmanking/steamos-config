@@ -82,7 +82,7 @@ feature_webterm() {
   check_socket_activation "$_url"
 }
 
-feature_webterm_uninstall() {
+uninstall_feature_webterm() {
   run systemctl --user disable --now webterm.socket 2>/dev/null || true
   run systemctl --user stop "${WEBTERM_SERVICES[@]}" 2>/dev/null || true
   run rm -f "$WEBTERM_UNIT_DIR/webterm.socket" "${WEBTERM_SERVICES[@]/#/$WEBTERM_UNIT_DIR/}"

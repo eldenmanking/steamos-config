@@ -4,6 +4,7 @@ Description=Web terminal (ttyd)
 StopWhenUnneeded=yes
 
 [Service]
+# TODO(andywang): update comment
 # The browser must have this font installed (see scripts/fetch-font.sh);
 # otherwise it falls back to the next family in the list.
 Environment="WEBTERM_FONT=JetBrainsMono Nerd Font Mono, JetBrainsMono Nerd Font, monospace"
