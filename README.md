@@ -92,6 +92,16 @@ bash scripts/install-systemd.sh     # also restarts it if running
 bash scripts/uninstall-systemd.sh
 ```
 
+These scripts, like `setup.sh`, run `install.sh`, which installs each part as
+a feature. Use it directly to pick features, remove them, or preview what
+would change:
+
+```sh
+./install.sh --help
+./install.sh --webterm --dry-run
+./install.sh --uninstall --webterm
+```
+
 ### Steam shortcut keys
 
 In Steam, under **Settings > In Game**:
