@@ -169,6 +169,37 @@ bash scripts/restart.sh
 The value can be any CSS font list without an `=`. Run
 `fc-list : family | grep -i nerd` to see the exact names that are installed.
 
+## Browser tab shortcuts
+
+xterm.js turns most Ctrl combos into terminal input and stops the browser
+from handling them. Chrome keeps some tab shortcuts for itself, but in
+fullscreen (F11) it lets the page handle every shortcut first, so the
+terminal would eat them. webterm hands these back to the browser:
+
+- <kbd>Ctrl</kbd>+<kbd>Tab</kbd> and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd>
+- <kbd>Ctrl</kbd>+<kbd>1</kbd> to <kbd>Ctrl</kbd>+<kbd>9</kbd>
+- <kbd>Ctrl</kbd>+<kbd>PgUp</kbd> and <kbd>Ctrl</kbd>+<kbd>PgDn</kbd>
+
+Every other key, like <kbd>Ctrl</kbd>+<kbd>W</kbd> or <kbd>Ctrl</kbd>+<kbd>R</kbd>,
+still goes to the shell.
+
+How it works:
+
+- ttyd has no option for this, but `-I` serves a custom `index.html`. The
+  repo keeps only the script to add, `web/tab-keys.html`. It listens for
+  keys before xterm.js does and stops them from reaching it, without
+  cancelling the browser's own handling.
+- The stock page bundles ttyd's browser client, which must match the ttyd
+  binary. So on every start, `webterm-ttyd.service` runs `bin/webterm-index`,
+  which starts a throwaway ttyd on a temporary UNIX socket, fetches its page,
+  appends the script and writes `~/.local/state/webterm/index.html`.
+- If that fails, ttyd still starts: with the last good page if there is
+  one, otherwise with its stock page (and no tab shortcuts in fullscreen).
+  `journalctl --user -u webterm-ttyd.service` shows why.
+
+After changing `web/tab-keys.html`, apply it as described in
+[Applying changes](#applying-changes) and reload open tabs.
+
 ## Encrypted home directory (dirlock)
 
 With an encrypted home directory, webterm doesn't start after a reboot. The
@@ -272,6 +303,7 @@ It checks that:
 
 - the page is only served under the token,
 - a cross-origin WebSocket is rejected,
+- the page is the stock page with `web/tab-keys.html` appended,
 - a shell command round-trips, and
 - the proxy exits once idle.
 

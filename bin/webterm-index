@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# TODO(andywang): add comment
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TTYD="$REPO_DIR/bin/ttyd"
+SNIPPET="$REPO_DIR/web/tab-keys.html"
+OUT="${1:?usage: webterm-index OUT.html [ENV_FILE]}"
+ENV_FILE="${2:-}"
+
+tmp=""
+pid=""
+finish() {
+  if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
+  if [ -n "$tmp" ]; then rm -rf "$tmp"; fi
+  rm -f "$OUT".tmp.*
+  # TODO(andywang): add comment
+  if [ -n "$ENV_FILE" ]; then
+    if [ -s "$OUT" ]; then
+      printf 'WEBTERM_INDEX_ARGS=-I %s\n' "$OUT" > "$ENV_FILE"
+    else
+      printf 'WEBTERM_INDEX_ARGS=\n' > "$ENV_FILE"
+    fi
+  fi
+}
+trap finish EXIT
+
+[ -x "$TTYD" ] || { echo "error: $TTYD not found" >&2; exit 1; }
+[ -s "$SNIPPET" ] || { echo "error: $SNIPPET not found" >&2; exit 1; }
+
+tmp="$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/webterm-index.XXXXXX")"
+"$TTYD" -i "$tmp/ttyd.sock" true > "$tmp/ttyd.log" 2>&1 &
+pid=$!
+
+for _ in $(seq 50); do
+  if curl -fsS --noproxy '*' --max-time 2 --unix-socket "$tmp/ttyd.sock" -o "$tmp/index.html" http://localhost/ 2>/dev/null; then
+    break
+  fi
+  kill -0 "$pid" 2>/dev/null || { cat "$tmp/ttyd.log" >&2; echo "error: ttyd exited early" >&2; exit 1; }
+  sleep 0.1
+done
+grep -qi '<html' "$tmp/index.html" 2>/dev/null || { echo "error: could not fetch the stock page from ttyd" >&2; exit 1; }
+
+mkdir -p "$(dirname "$OUT")"
+new="$(mktemp "$OUT.tmp.XXXXXX")"
+cat "$tmp/index.html" "$SNIPPET" > "$new"
+mv -f "$new" "$OUT"
+echo "Wrote $OUT"

@@ -6,6 +6,7 @@ UNIT_DIR="$HOME/.config/systemd/user"
 systemctl --user disable --now webterm.socket 2>/dev/null || true
 systemctl --user stop webterm.service webterm-ttyd.service 2>/dev/null || true
 rm -f "$UNIT_DIR/webterm.socket" "$UNIT_DIR/webterm.service" "$UNIT_DIR/webterm-ttyd.service"
+rm -rf "${XDG_STATE_HOME:-$HOME/.local/state}/webterm"
 systemctl --user daemon-reload
 
 echo "Uninstalled. Your URL token is kept in $HOME/.config/webterm/env."

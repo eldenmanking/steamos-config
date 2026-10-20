@@ -4,6 +4,7 @@
 systemd-socket-activate plays webterm.socket: it listens on a TCP port and
 starts systemd-socket-proxyd on the first connection, exactly like the unit.
 Checks: secret path, origin check, shell round-trip, and idle exit.
+TODO(andywang): update comment
 """
 import base64
 import json
@@ -45,13 +46,14 @@ def find_proxyd():
     fail("systemd-socket-proxyd not found")
 
 
-def http_get(path):
+def http_get(path, body=False):
     with socket.create_connection(("127.0.0.1", PORT), timeout=5) as s:
         s.sendall(f"GET {path} HTTP/1.1\r\nHost: localhost:{PORT}\r\nConnection: close\r\n\r\n".encode())
         data = b""
         while chunk := s.recv(65536):
             data += chunk
-    return int(data.split(b" ", 2)[1])
+    status = int(data.split(b" ", 2)[1])
+    return (status, data.split(b"\r\n\r\n", 1)[1]) if body else status
 
 
 class WS:
@@ -117,9 +119,19 @@ def main():
     rundir = tempfile.mkdtemp()
     sock = os.path.join(rundir, "webterm.sock")
     env = {**os.environ, "SHELL": "/bin/bash"}
+    index = os.path.join(rundir, "index.html")
+    index_env = os.path.join(rundir, "webterm-index.env")
+    subprocess.run([os.path.join(REPO, "bin", "webterm-index"), index, index_env], check=True,
+                   env={**env, "XDG_RUNTIME_DIR": rundir}, stdout=subprocess.DEVNULL)
+    with open(index_env) as f:
+        index_args = f.read().strip().split("=", 1)[1].split()
+    if index_args != ["-I", index]:
+        fail(f"unexpected index args: {index_args}")
+    with open(os.path.join(REPO, "web", "tab-keys.html"), "rb") as f:
+        snippet = f.read()
     procs.append(subprocess.Popen(
         [ttyd, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
-         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}",
+         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}", *index_args,
          os.path.join(REPO, "bin", "webterm-shell")],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     for _ in range(50):
@@ -138,9 +150,13 @@ def main():
 
     if http_get("/") != 404:
         fail("page served without the secret path")
-    if http_get(f"/{TOKEN}/") != 200:
+    status, page = http_get(f"/{TOKEN}/", body=True)
+    if status != 200:
         fail("page not served under the secret path")
     print("ok: page only served under the secret path")
+    if b"<html" not in page or not page.endswith(snippet):
+        fail("served page is not the stock page plus web/tab-keys.html")
+    print("ok: page includes the tab-switching key script")
 
     host = f"localhost:{PORT}"
     bad = WS(f"/{TOKEN}/ws", host, "http://evil.example")
