@@ -12,6 +12,8 @@ done
 [ -n "$PROXYD" ] || { echo "error: systemd-socket-proxyd not found" >&2; exit 1; }
 
 bash "$REPO_DIR/scripts/fetch-ttyd.sh"
+"$REPO_DIR/bin/webterm-index" build \
+  || echo "warning: could not build the webterm page; ttyd will serve its stock page" >&2
 
 # Secret URL path: keeps other sites (incl. DNS rebinding) from finding the shell
 mkdir -p "$CONF_DIR"

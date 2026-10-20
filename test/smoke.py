@@ -7,6 +7,7 @@ Checks: secret path, origin check, shell round-trip, and idle exit.
 TODO(andywang): update comment
 """
 import base64
+import hashlib
 import json
 import os
 import shutil
@@ -119,19 +120,29 @@ def main():
     rundir = tempfile.mkdtemp()
     sock = os.path.join(rundir, "webterm.sock")
     env = {**os.environ, "SHELL": "/bin/bash"}
-    index = os.path.join(rundir, "index.html")
+    webterm_index = os.path.join(REPO, "bin", "webterm-index")
     index_env = os.path.join(rundir, "webterm-index.env")
-    subprocess.run([os.path.join(REPO, "bin", "webterm-index"), index, index_env], check=True,
-                   env={**env, "XDG_RUNTIME_DIR": rundir}, stdout=subprocess.DEVNULL)
-    with open(index_env) as f:
-        index_args = f.read().strip().split("=", 1)[1].split()
-    if index_args != ["-I", index]:
-        fail(f"unexpected index args: {index_args}")
+    index_run_env = {**env, "XDG_RUNTIME_DIR": rundir, "XDG_STATE_HOME": rundir}
+
+    def index_args():
+        subprocess.run([webterm_index, "env", index_env], check=True, env=index_run_env,
+                       stderr=subprocess.DEVNULL)
+        with open(index_env) as f:
+            return f.read().strip().split("=", 1)[1].split()
+
+    if index_args() != []:
+        fail("index args set before the page was built")
+    print("ok: no page built, ttyd gets no -I")
+    subprocess.run([webterm_index, "build"], check=True, env=index_run_env, stdout=subprocess.DEVNULL)
+    with open(ttyd, "rb") as f:
+        index = os.path.join(rundir, "webterm", f"index-{hashlib.sha256(f.read()).hexdigest()}.html")
+    if index_args() != ["-I", index]:
+        fail(f"unexpected index args: {index_args()}")
     with open(os.path.join(REPO, "web", "tab-keys.html"), "rb") as f:
         snippet = f.read()
     procs.append(subprocess.Popen(
         [ttyd, "-i", sock, "-b", f"/{TOKEN}", "-W", "-O", "-P", "10",
-         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}", *index_args,
+         "-t", "titleFixed=Web Terminal", "-t", f"fontFamily={FONT}", *index_args(),
          os.path.join(REPO, "bin", "webterm-shell")],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     for _ in range(50):

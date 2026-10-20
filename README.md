@@ -190,12 +190,15 @@ How it works:
   keys before xterm.js does and stops them from reaching it, without
   cancelling the browser's own handling.
 - The stock page bundles ttyd's browser client, which must match the ttyd
-  binary. So on every start, `webterm-ttyd.service` runs `bin/webterm-index`,
-  which starts a throwaway ttyd on a temporary UNIX socket, fetches its page,
-  appends the script and writes `~/.local/state/webterm/index.html`.
-- If that fails, ttyd still starts: with the last good page if there is
-  one, otherwise with its stock page (and no tab shortcuts in fullscreen).
-  `journalctl --user -u webterm-ttyd.service` shows why.
+  binary. So when the units are installed (`setup.sh`, `install-systemd.sh`
+  or `restart.sh`), `bin/webterm-index build` starts a throwaway ttyd on a
+  temporary UNIX socket, fetches its page, appends the script and writes
+  `~/.local/state/webterm/index-<sha256 of bin/ttyd>.html`.
+- On every start, `webterm-ttyd.service` hashes `bin/ttyd` and passes
+  `-I` only if a page for that hash exists. If not, ttyd serves its stock
+  page: the terminal works, but without the tab shortcuts in fullscreen.
+  `journalctl --user -u webterm-ttyd.service` then shows a warning, and
+  `bash scripts/restart.sh` builds the page again.
 
 After changing `web/tab-keys.html`, apply it as described in
 [Applying changes](#applying-changes) and reload open tabs.
