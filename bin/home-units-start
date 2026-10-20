@@ -13,23 +13,41 @@ set -u
 dir="$HOME/.config/systemd/user"
 
 # Encrypted names hide ~/.config until the home directory is unlocked
-until [ -d "$HOME/.config" ]; do sleep 2; done
-systemctl --user daemon-reload || exit 1
+wait_for_home() {
+  until [ -d "$HOME/.config" ]; do sleep 2; done
+}
 
-for wants in "$dir"/*.target.wants "$dir"/*.target.requires; do
-  [ -d "$wants" ] || continue
-  target="$(basename "${wants%.*}")"
-  state="$(systemctl --user show -P ActiveState "$target")"
+# TODO(andywang): add comment
+target_is_up() {
+  state="$(systemctl --user show -P ActiveState "$1")"
   case "$state" in
     active|activating) ;;
-    *) echo "$target is $state: leaving its units for when it starts"; continue ;;
+    *) echo "$1 is $state: leaving its units for when it starts"; return 1 ;;
   esac
+}
+
+# TODO(andywang): add comment
+start_target_units() {
+  wants="$1"
+  target="$(basename "${wants%.*}")"
+  target_is_up "$target" || return 0
   set --
   for link in "$wants"/*; do
     [ -e "$link" ] || [ -L "$link" ] || continue
     set -- "$@" "${link##*/}"
   done
-  [ $# -gt 0 ] || continue
+  [ $# -gt 0 ] || return 0
   echo "$target: starting $*"
   systemctl --user start --no-block "$@" || echo "warning: could not start some of: $*" >&2
-done
+}
+
+main() {
+  wait_for_home
+  systemctl --user daemon-reload || exit 1
+  for wants in "$dir"/*.target.wants "$dir"/*.target.requires; do
+    [ -d "$wants" ] || continue
+    start_target_units "$wants"
+  done
+}
+
+main
